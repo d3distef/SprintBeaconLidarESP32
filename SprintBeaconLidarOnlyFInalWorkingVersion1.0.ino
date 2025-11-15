@@ -28,6 +28,8 @@ static const int LUNA_TX = 12;
 static const int XT_RX   = 44;
 static const int XT_TX   = 43;
 static const int LIDAR_BAUD = 115200;
+// Clamp the TF-Luna background to 6 ft (183 cm)
+static const uint16_t BASELINE_MAX_CM = 1830;
 
 // ===== LEDs =====
 CRGB leds[NUM_LEDS];
@@ -455,7 +457,11 @@ pollXT_modbus();
         aboveConsec = ABOVE_CONSEC_REQUIRED;
         nearArmed   = true;
         runIgnoreUntilMs = now + 300;   // ignore first 300 ms after start
-        baseline_cm = (uint16_t)luna_mm;   // store background distance
+        baseline_cm = BASELINE_MAX_CM;  // default if no valid reading
+        if (luna_mm > 0) {
+          uint16_t cm = (uint16_t)luna_mm;  // mm → cm (rounded)
+          baseline_cm = (cm > BASELINE_MAX_CM) ? BASELINE_MAX_CM : cm;
+        }
         Serial.println("[RUN] Started");
         enterPhase(Phase::RUNNING);
       }
@@ -465,8 +471,12 @@ pollXT_modbus();
       ledsGreenWaves(now);
 
       // Robust finish detection on "near" crossing
-      if (luna_mm >= 0 && (int32_t)(now - runIgnoreUntilMs) >= 0) {
-         const uint16_t cur_cm   = (uint16_t)luna_mm;
+      if (luna_mm > 0 && (int32_t)(now - runIgnoreUntilMs) >= 0) {
+        uint16_t cur_cm   = (uint16_t)luna_mm;
+         if (luna_mm > 0) {
+          cur_cm = (uint16_t)luna_mm; 
+          if (cur_cm > BASELINE_MAX_CM) cur_cm = BASELINE_MAX_CM;
+            }
   const uint16_t drop_cm  = (baseline_cm > cur_cm) ? (baseline_cm - cur_cm) : 0;
 
 
