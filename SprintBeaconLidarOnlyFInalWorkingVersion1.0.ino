@@ -473,6 +473,7 @@ pollXT_modbus();
       // Robust finish detection on "near" crossing
       if (luna_mm > 0 && (int32_t)(now - runIgnoreUntilMs) >= 0) {
         uint16_t cur_cm   = (uint16_t)luna_mm;
+        // Can't be equal to zero
          if (luna_mm > 0) {
           cur_cm = (uint16_t)luna_mm; 
           if (cur_cm > BASELINE_MAX_CM) cur_cm = BASELINE_MAX_CM;
